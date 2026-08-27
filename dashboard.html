@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Dashboard — Dr Nader Mosaad</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#05090E; --bg-1:#080D14; --card:#0C131B; --card-line:rgba(143,165,173,0.14);
+    --accent:#1CE1C0; --accent-2:#588AFF; --text:#F5FFFF; --text-2:#8FA5AD;
+    --glass:rgba(12,19,27,0.6); --danger:#FF6B6B; --ok:#22C57C;
+    --radius-lg:20px; --radius-md:14px; --radius-sm:10px;
+    --ease: cubic-bezier(.16,.84,.44,1);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100svh; background:var(--bg-0); color:var(--text);
+    font-family:'Manrope',system-ui,sans-serif; display:flex;
+  }
+  a{ color:inherit; }
+  h1,h2,h3{ font-family:'Space Grotesk',sans-serif; margin:0; }
+  .hidden{ display:none !important; }
+
+  /* ---- sidebar ---- */
+  #sidebar{
+    width:220px; flex:0 0 auto; background:var(--bg-1); border-right:1px solid var(--card-line);
+    padding:20px 14px; position:sticky; top:0; height:100svh; overflow-y:auto; z-index:20;
+  }
+  .brand{ font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:700; padding:6px 10px 20px; }
+  .brand span{ color:var(--accent); }
+  nav.sidenav button{
+    display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px;
+    border-radius:var(--radius-sm); border:none; background:transparent; color:var(--text-2);
+    font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; margin-bottom:2px;
+    transition:background .25s var(--ease), color .25s var(--ease);
+  }
+  nav.sidenav button:hover{ background:rgba(255,255,255,.04); color:var(--text); }
+  nav.sidenav button.active{ background:linear-gradient(135deg, color-mix(in srgb, var(--accent) 18%, var(--card)), color-mix(in srgb, var(--accent-2) 14%, var(--card))); color:var(--text); }
+  nav.sidenav .divider{ height:1px; background:var(--card-line); margin:12px 4px; }
+
+  /* ---- main ---- */
+  #main{ flex:1; min-width:0; padding:26px 30px 60px; max-width:900px; }
+  .topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; gap:12px; flex-wrap:wrap; }
+  .topbar h1{ font-size:22px; }
+  .topbar .who{ font-size:12.5px; color:var(--text-2); }
+  #menu-toggle{ display:none; }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .card{
+    background:var(--glass); border:1px solid var(--card-line); border-radius:var(--radius-lg);
+    padding:22px; margin-bottom:18px; backdrop-filter:blur(16px);
+  }
+  .card h2{ font-size:16px; margin-bottom:4px; }
+  .card .desc{ font-size:12.5px; color:var(--text-2); margin:0 0 18px; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:640px){ .grid2{ grid-template-columns:1fr; } }
+
+  label{ display:block; font-size:11.5px; font-weight:700; color:var(--text-2); text-transform:uppercase; letter-spacing:.05em; margin:12px 0 6px; }
+  label.first{ margin-top:0; }
+  input[type=text], input[type=email], input[type=password], input[type=url], textarea, select{
+    width:100%; padding:10px 12px; border-radius:var(--radius-sm); border:1px solid var(--card-line);
+    background:rgba(255,255,255,.03); color:var(--text); font-size:13.5px; font-family:inherit; resize:vertical;
+  }
+  input:focus, textarea:focus, select:focus{ outline:none; border-color:var(--accent); }
+  input[type=color]{ width:100%; height:40px; border-radius:var(--radius-sm); border:1px solid var(--card-line); background:transparent; padding:2px; }
+  input[type=checkbox]{ width:16px; height:16px; }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:7px; padding:9px 16px; border-radius:999px; border:none;
+    font-family:inherit; font-weight:700; font-size:13px; cursor:pointer; transition:transform .2s var(--ease), opacity .2s;
+  }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn-primary{ color:#031013; background:linear-gradient(135deg, var(--accent), var(--accent-2)); }
+  .btn-ghost{ color:var(--text); background:rgba(255,255,255,.05); border:1px solid var(--card-line); }
+  .btn-danger{ color:#fff; background:color-mix(in srgb, var(--danger) 75%, black); }
+  .btn-sm{ padding:6px 12px; font-size:12px; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .row.end{ justify-content:flex-end; margin-top:16px; }
+
+  /* links list */
+  .link-item{
+    display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--card-line);
+    border-radius:var(--radius-md); margin-bottom:8px; background:rgba(255,255,255,.02); cursor:grab;
+  }
+  .link-item.dragging{ opacity:.4; }
+  .link-item .handle{ color:var(--text-2); font-size:16px; }
+  .link-item .info{ flex:1; min-width:0; }
+  .link-item .info .name{ font-weight:700; font-size:13.5px; }
+  .link-item .info .url{ font-size:11.5px; color:var(--text-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .toggle{ position:relative; width:38px; height:22px; flex:0 0 auto; }
+  .toggle input{ opacity:0; width:100%; height:100%; margin:0; position:absolute; cursor:pointer; }
+  .toggle .track{ position:absolute; inset:0; background:var(--card-line); border-radius:999px; transition:background .25s; }
+  .toggle .thumb{ position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .25s; }
+  .toggle input:checked ~ .track{ background:linear-gradient(135deg,var(--accent),var(--accent-2)); }
+  .toggle input:checked ~ .thumb{ transform:translateX(16px); }
+
+  .section-item{ border:1px solid var(--card-line); border-radius:var(--radius-md); padding:14px; margin-bottom:10px; background:rgba(255,255,255,.02); }
+  .section-item .head{ display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .section-item .head .t{ font-weight:700; font-size:13.5px; }
+
+  .empty{ text-align:center; padding:26px 10px; color:var(--text-2); font-size:13px; }
+
+  .avatar-preview{ width:84px; height:84px; border-radius:50%; object-fit:cover; border:2px solid var(--card-line); display:block; margin-bottom:12px; background:var(--card); }
+
+  #toast-wrap{ position:fixed; bottom:20px; right:20px; z-index:100; display:flex; flex-direction:column; gap:8px; }
+  .toast{
+    padding:11px 16px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; color:var(--text);
+    background:var(--card); border:1px solid var(--card-line); box-shadow:0 12px 30px -10px rgba(0,0,0,.6);
+    animation:toastIn .3s var(--ease);
+  }
+  .toast.ok{ border-color:color-mix(in srgb, var(--ok) 45%, var(--card-line)); }
+  .toast.err{ border-color:color-mix(in srgb, var(--danger) 45%, var(--card-line)); color:var(--danger); }
+  @keyframes toastIn{ from{ opacity:0; transform:translateY(8px); } to{ opacity:1; transform:none; } }
+
+  .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; z-index:90; padding:20px; }
+  .modal{ background:var(--card); border:1px solid var(--card-line); border-radius:var(--radius-lg); padding:22px; max-width:360px; width:100%; }
+  .modal p{ font-size:13.5px; color:var(--text-2); }
+
+  .spinner{ display:inline-block; width:14px; height:14px; border:2px solid rgba(3,16,19,.35); border-top-color:#031013; border-radius:50%; animation:spin .7s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .skeleton{ color:var(--text-2); font-size:13px; padding:20px; }
+
+  /* mobile */
+  @media (max-width:820px){
+    #sidebar{ position:fixed; left:0; top:0; transform:translateX(-100%); transition:transform .3s var(--ease); box-shadow:0 0 40px rgba(0,0,0,.5); }
+    #sidebar.open{ transform:translateX(0); }
+    #menu-toggle{ display:inline-flex; }
+    #main{ padding:18px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div class="brand">Dr Nader <span>Admin</span></div>
+  <nav class="sidenav" id="sidenav">
+    <button data-panel="overview" class="active">🏠 Overview</button>
+    <button data-panel="profile">👤 Profile</button>
+    <button data-panel="links">🔗 Social Links</button>
+    <button data-panel="sections">🗂️ Sections</button>
+    <button data-panel="media">🖼️ Media</button>
+    <button data-panel="appearance">🎨 Appearance</button>
+    <button data-panel="settings">⚙️ Account</button>
+    <div class="divider"></div>
+    <button id="preview-btn">🔍 Preview Website</button>
+    <button id="logout-btn">🚪 Logout</button>
+  </nav>
+</aside>
+
+<main id="main">
+  <div class="topbar">
+    <div>
+      <button id="menu-toggle" class="btn btn-ghost btn-sm">☰ Menu</button>
+      <h1 id="page-title">Overview</h1>
+      <div class="who" id="who"></div>
+    </div>
+    <a class="btn btn-ghost" href="/" target="_blank">Preview Website ↗</a>
+  </div>
+
+  <div id="loading" class="skeleton">Loading…</div>
+  <div id="app" class="hidden">
+
+    <!-- OVERVIEW -->
+    <section class="panel active" data-panel="overview">
+      <div class="card">
+        <h2>Welcome back</h2>
+        <p class="desc">Quick snapshot of your public profile.</p>
+        <div class="grid2">
+          <div><label class="first">Enabled links</label><div id="ov-links">–</div></div>
+          <div><label class="first">Custom sections</label><div id="ov-sections">–</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Getting started</h2>
+        <p class="desc">Edit your profile, manage links, add sections — every change goes live on the homepage immediately after you save.</p>
+      </div>
+    </section>
+
+    <!-- PROFILE -->
+    <section class="panel" data-panel="profile">
+      <div class="card">
+        <h2>Profile</h2>
+        <p class="desc">Shown at the top of your homepage. Fill both languages for full bilingual support.</p>
+        <form id="profile-form">
+          <div class="grid2">
+            <div>
+              <label class="first">Badge emoji</label>
+              <input type="text" id="p-badgeEmoji" maxlength="4" />
+            </div>
+            <div></div>
+            <div>
+              <label class="first">Name (English)</label>
+              <input type="text" id="p-name_en" />
+            </div>
+            <div>
+              <label class="first">Name (Arabic)</label>
+              <input type="text" id="p-name_ar" dir="rtl" />
+            </div>
+            <div>
+              <label>Badge (English)</label>
+              <input type="text" id="p-badge_en" />
+            </div>
+            <div>
+              <label>Badge (Arabic)</label>
+              <input type="text" id="p-badge_ar" dir="rtl" />
+            </div>
+            <div>
+              <label>Description (English)</label>
+              <input type="text" id="p-subtitle_en" />
+            </div>
+            <div>
+              <label>Description (Arabic)</label>
+              <input type="text" id="p-subtitle_ar" dir="rtl" />
+            </div>
+            <div>
+              <label>University (English)</label>
+              <input type="text" id="p-university_en" />
+            </div>
+            <div>
+              <label>University (Arabic)</label>
+              <input type="text" id="p-university_ar" dir="rtl" />
+            </div>
+            <div>
+              <label>Year (English)</label>
+              <input type="text" id="p-year_en" />
+            </div>
+            <div>
+              <label>Year (Arabic)</label>
+              <input type="text" id="p-year_ar" dir="rtl" />
+            </div>
+            <div>
+              <label>College (English)</label>
+              <input type="text" id="p-college_en" />
+            </div>
+            <div>
+              <label>College (Arabic)</label>
+              <input type="text" id="p-college_ar" dir="rtl" />
+            </div>
+            <div>
+              <label>Footer text (English)</label>
+              <input type="text" id="p-footer_en" />
+            </div>
+            <div>
+              <label>Footer text (Arabic)</label>
+              <input type="text" id="p-footer_ar" dir="rtl" />
+            </div>
+            <div>
+              <label>Footer university (English)</label>
+              <input type="text" id="p-footerUni_en" />
+            </div>
+            <div>
+              <label>Footer university (Arabic)</label>
+              <input type="text" id="p-footerUni_ar" dir="rtl" />
+            </div>
+          </div>
+          <div class="row end">
+            <button type="button" class="btn btn-ghost" id="profile-cancel">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="profile-save">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- LINKS -->
+    <section class="panel" data-panel="links">
+      <div class="card">
+        <h2>Social &amp; contact links</h2>
+        <p class="desc">Drag the handle to reorder. Toggle to enable or disable a link on the homepage.</p>
+        <div id="links-list"></div>
+        <div class="row end"><button class="btn btn-primary" id="add-link-btn">+ Add Link</button></div>
+      </div>
+    </section>
+
+    <!-- SECTIONS -->
+    <section class="panel" data-panel="sections">
+      <div class="card">
+        <h2>Custom sections</h2>
+        <p class="desc">Add unlimited extra sections (About, Education, Certificates, Services…) without touching any code.</p>
+        <div id="sections-list"></div>
+        <div class="row end"><button class="btn btn-primary" id="add-section-btn">+ Add Section</button></div>
+      </div>
+    </section>
+
+    <!-- MEDIA -->
+    <section class="panel" data-panel="media">
+      <div class="card">
+        <h2>Profile photo</h2>
+        <p class="desc">PNG, JPEG or WebP, up to 5MB. Square images look best.</p>
+        <img id="media-preview" class="avatar-preview" alt="Current profile photo" />
+        <input type="file" id="media-file" accept="image/png,image/jpeg,image/webp" />
+        <div class="row end">
+          <button class="btn btn-primary" id="media-upload-btn">Upload &amp; Save</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- APPEARANCE -->
+    <section class="panel" data-panel="appearance">
+      <div class="card">
+        <h2>Appearance</h2>
+        <p class="desc">Fine-tune the theme without breaking the premium look.</p>
+        <div class="grid2">
+          <div>
+            <label class="first">Default theme</label>
+            <select id="a-theme">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
+          <div>
+            <label class="first">Button style</label>
+            <select id="a-buttonStyle">
+              <option value="glass">Glass (default)</option>
+              <option value="solid">Solid</option>
+              <option value="outline">Outline</option>
+            </select>
+          </div>
+          <div>
+            <label>Primary accent</label>
+            <input type="color" id="a-accent" />
+          </div>
+          <div>
+            <label>Secondary accent</label>
+            <input type="color" id="a-accent2" />
+          </div>
+        </div>
+        <div class="row end">
+          <button class="btn btn-primary" id="appearance-save">Save Changes</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS / ACCOUNT -->
+    <section class="panel" data-panel="settings">
+      <div class="card">
+        <h2>Account</h2>
+        <p class="desc">Signed in as <span id="acct-email"></span></p>
+        <form id="pw-form">
+          <label class="first">Current password</label>
+          <input type="password" id="pw-current" autocomplete="current-password" required />
+          <label>New password</label>
+          <input type="password" id="pw-new" autocomplete="new-password" minlength="8" required />
+          <div class="row end">
+            <button type="submit" class="btn btn-primary">Change Password</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<div id="toast-wrap"></div>
+
+<script>
+(function(){
+  "use strict";
+  var state = { profile:{}, socialLinks:[], sections:[], settings:{}, email:'' };
+
+  function api(path, opts){
+    opts = opts || {};
+    opts.credentials = 'same-origin';
+    if(opts.body && typeof opts.body !== 'string'){
+      opts.headers = Object.assign({'Content-Type':'application/json'}, opts.headers || {});
+      opts.body = JSON.stringify(opts.body);
+    }
+    return fetch(path, opts).then(function(r){
+      if(r.status === 401){ window.location.href = '/admin/login'; throw new Error('UNAUTHORIZED'); }
+      return r.json().then(function(d){
+        if(!r.ok) throw new Error(d.error || 'REQUEST_FAILED');
+        return d;
+      });
+    });
+  }
+
+  function toast(msg, type){
+    var el = document.createElement('div');
+    el.className = 'toast ' + (type || 'ok');
+    el.textContent = msg;
+    document.getElementById('toast-wrap').appendChild(el);
+    setTimeout(function(){ el.remove(); }, 3200);
+  }
+
+  function confirmDialog(message){
+    return new Promise(function(resolve){
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      backdrop.innerHTML = '<div class="modal"><h3>Are you sure?</h3><p>' + message + '</p>' +
+        '<div class="row end"><button class="btn btn-ghost" id="cd-cancel">Cancel</button><button class="btn btn-danger" id="cd-ok">Delete</button></div></div>';
+      document.body.appendChild(backdrop);
+      backdrop.querySelector('#cd-cancel').onclick = function(){ backdrop.remove(); resolve(false); };
+      backdrop.querySelector('#cd-ok').onclick = function(){ backdrop.remove(); resolve(true); };
+    });
+  }
+
+  /* ---------------- navigation ---------------- */
+  var titles = { overview:'Overview', profile:'Profile', links:'Social Links', sections:'Custom Sections', media:'Media', appearance:'Appearance', settings:'Account' };
+  document.getElementById('sidenav').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-panel]');
+    if(!btn) return;
+    document.querySelectorAll('.sidenav button[data-panel]').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelector('.panel[data-panel="' + btn.dataset.panel + '"]').classList.add('active');
+    document.getElementById('page-title').textContent = titles[btn.dataset.panel];
+    document.getElementById('sidebar').classList.remove('open');
+  });
+  document.getElementById('menu-toggle').addEventListener('click', function(){
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+  document.getElementById('preview-btn').addEventListener('click', function(){ window.open('/', '_blank'); });
+  document.getElementById('logout-btn').addEventListener('click', function(){
+    api('/api/auth/logout', { method:'POST' }).then(function(){ window.location.href = '/admin/login'; });
+  });
+
+  /* ---------------- load state ---------------- */
+  function load(){
+    return api('/api/admin/state').then(function(data){
+      state = data;
+      document.getElementById('who').textContent = data.email;
+      document.getElementById('acct-email').textContent = data.email;
+      fillProfileForm();
+      renderLinks();
+      renderSections();
+      fillAppearanceForm();
+      document.getElementById('media-preview').src = data.profile.profileImage || fallbackAvatar();
+      document.getElementById('ov-links').textContent = data.socialLinks.filter(function(l){return l.enabled;}).length + ' / ' + data.socialLinks.length + ' enabled';
+      document.getElementById('ov-sections').textContent = data.sections.length;
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('app').classList.remove('hidden');
+    }).catch(function(e){
+      if(e.message !== 'UNAUTHORIZED'){ toast('Could not load dashboard data', 'err'); }
+    });
+  }
+  function fallbackAvatar(){
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="84" height="84"><rect width="84" height="84" fill="#0C131B"/><text x="42" y="48" font-size="30" fill="#8FA5AD" text-anchor="middle">?</text></svg>');
+  }
+
+  /* ---------------- profile ---------------- */
+  var PROFILE_FIELDS = ['badgeEmoji','name_en','name_ar','badge_en','badge_ar','subtitle_en','subtitle_ar','university_en','university_ar','year_en','year_ar','college_en','college_ar','footer_en','footer_ar','footerUni_en','footerUni_ar'];
+  function fillProfileForm(){
+    PROFILE_FIELDS.forEach(function(f){
+      var el = document.getElementById('p-' + f);
+      if(el) el.value = state.profile[f] || '';
+    });
+  }
+  document.getElementById('profile-cancel').addEventListener('click', fillProfileForm);
+  document.getElementById('profile-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var body = {};
+    PROFILE_FIELDS.forEach(function(f){
+      var el = document.getElementById('p-' + f);
+      if(el) body[f] = el.value;
+    });
+    var btn = document.getElementById('profile-save');
+    btn.disabled = true;
+    api('/api/admin/profile', { method:'PUT', body: body }).then(function(res){
+      state.profile = res.profile;
+      toast('Profile saved');
+    }).catch(function(){ toast('Could not save profile', 'err'); })
+      .finally(function(){ btn.disabled = false; });
+  });
+
+  /* ---------------- links ---------------- */
+  var PLATFORM_OPTIONS = ['facebook','instagram','tiktok','whatsapp','telegram','linkedin','youtube','website','email','phone'];
+  function renderLinks(){
+    var list = document.getElementById('links-list');
+    list.innerHTML = '';
+    if(!state.socialLinks.length){
+      list.innerHTML = '<div class="empty">No links yet — add your first one below.</div>';
+      return;
+    }
+    state.socialLinks.sort(function(a,b){ return a.order - b.order; }).forEach(function(link){
+      var item = document.createElement('div');
+      item.className = 'link-item';
+      item.draggable = true;
+      item.dataset.id = link.id;
+      item.innerHTML =
+        '<span class="handle">⠿</span>' +
+        '<div class="info"><div class="name">' + escapeHtml(link.name_en) + '</div><div class="url">' + escapeHtml(link.url) + '</div></div>' +
+        '<label class="toggle"><input type="checkbox" ' + (link.enabled ? 'checked' : '') + '><span class="track"></span><span class="thumb"></span></label>' +
+        '<button class="btn btn-ghost btn-sm" data-act="edit">Edit</button>' +
+        '<button class="btn btn-danger btn-sm" data-act="delete">Delete</button>';
+      item.querySelector('input[type=checkbox]').addEventListener('change', function(ev){
+        api('/api/admin/links/' + link.id, { method:'PUT', body:{ enabled: ev.target.checked } })
+          .then(function(res){ link.enabled = res.link.enabled; toast(link.enabled ? 'Link enabled' : 'Link disabled'); })
+          .catch(function(){ toast('Could not update link', 'err'); ev.target.checked = !ev.target.checked; });
+      });
+      item.querySelector('[data-act="edit"]').addEventListener('click', function(){ openLinkModal(link); });
+      item.querySelector('[data-act="delete"]').addEventListener('click', function(){
+        confirmDialog('This will remove "' + escapeHtml(link.name_en) + '" from your homepage.').then(function(ok){
+          if(!ok) return;
+          api('/api/admin/links/' + link.id, { method:'DELETE' }).then(function(){
+            state.socialLinks = state.socialLinks.filter(function(l){ return l.id !== link.id; });
+            renderLinks();
+            toast('Link deleted');
+          }).catch(function(){ toast('Could not delete link', 'err'); });
+        });
+      });
+      item.addEventListener('dragstart', function(){ item.classList.add('dragging'); });
+      item.addEventListener('dragend', function(){
+        item.classList.remove('dragging');
+        var ids = Array.prototype.map.call(list.children, function(el){ return el.dataset.id; });
+        api('/api/admin/links/reorder', { method:'POST', body:{ order: ids } }).catch(function(){ toast('Could not save order', 'err'); });
+      });
+      list.appendChild(item);
+    });
+    list.addEventListener('dragover', function(e){
+      e.preventDefault();
+      var dragging = list.querySelector('.dragging');
+      if(!dragging) return;
+      var after = getDragAfter(list, e.clientY);
+      if(after == null) list.appendChild(dragging); else list.insertBefore(dragging, after);
+    });
+  }
+  function getDragAfter(container, y){
+    var els = Array.prototype.slice.call(container.querySelectorAll('.link-item:not(.dragging)'));
+    return els.reduce(function(closest, child){
+      var box = child.getBoundingClientRect();
+      var offset = y - box.top - box.height/2;
+      if(offset < 0 && offset > closest.offset) return { offset: offset, element: child };
+      return closest;
+    }, { offset: -Infinity }).element;
+  }
+
+  function openLinkModal(link){
+    var isNew = !link;
+    link = link || { platform:'website', name_en:'', name_ar:'', sub_en:'', sub_ar:'', url:'', style:'default', enabled:true };
+    var backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML =
+      '<div class="modal" style="max-width:420px;">' +
+      '<h3>' + (isNew ? 'Add link' : 'Edit link') + '</h3>' +
+      '<label class="first">Platform</label>' +
+      '<select id="lm-platform">' + PLATFORM_OPTIONS.map(function(p){ return '<option value="' + p + '"' + (p === link.platform ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' +
+      '<label>URL</label><input type="url" id="lm-url" value="' + escapeAttr(link.url) + '" placeholder="https://..." />' +
+      '<label>Name (English)</label><input type="text" id="lm-name-en" value="' + escapeAttr(link.name_en) + '" />' +
+      '<label>Name (Arabic)</label><input type="text" id="lm-name-ar" dir="rtl" value="' + escapeAttr(link.name_ar) + '" />' +
+      '<label>Subtitle (English)</label><input type="text" id="lm-sub-en" value="' + escapeAttr(link.sub_en || '') + '" />' +
+      '<label>Subtitle (Arabic)</label><input type="text" id="lm-sub-ar" dir="rtl" value="' + escapeAttr(link.sub_ar || '') + '" />' +
+      '<label>Button style</label><select id="lm-style"><option value="default"' + (link.style==='default'?' selected':'') + '>Default</option><option value="cta"' + (link.style==='cta'?' selected':'') + '>Highlighted (CTA)</option></select>' +
+      '<div class="row end"><button class="btn btn-ghost" id="lm-cancel">Cancel</button><button class="btn btn-primary" id="lm-save">' + (isNew ? 'Add Link' : 'Save Changes') + '</button></div>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector('#lm-cancel').onclick = function(){ backdrop.remove(); };
+    backdrop.querySelector('#lm-save').onclick = function(){
+      var body = {
+        platform: backdrop.querySelector('#lm-platform').value,
+        url: backdrop.querySelector('#lm-url').value,
+        name_en: backdrop.querySelector('#lm-name-en').value,
+        name_ar: backdrop.querySelector('#lm-name-ar').value,
+        sub_en: backdrop.querySelector('#lm-sub-en').value,
+        sub_ar: backdrop.querySelector('#lm-sub-ar').value,
+        style: backdrop.querySelector('#lm-style').value
+      };
+      var req = isNew ? api('/api/admin/links', { method:'POST', body: body }) : api('/api/admin/links/' + link.id, { method:'PUT', body: body });
+      req.then(function(res){
+        var saved = res.link;
+        if(isNew) state.socialLinks.push(saved);
+        else Object.assign(link, saved);
+        renderLinks();
+        backdrop.remove();
+        toast(isNew ? 'Link added' : 'Link updated');
+      }).catch(function(){ toast('Please check the URL and try again', 'err'); });
+    };
+  }
+  document.getElementById('add-link-btn').addEventListener('click', function(){ openLinkModal(null); });
+
+  /* ---------------- sections ---------------- */
+  function renderSections(){
+    var list = document.getElementById('sections-list');
+    list.innerHTML = '';
+    if(!state.sections.length){
+      list.innerHTML = '<div class="empty">No custom sections yet.</div>';
+      return;
+    }
+    state.sections.sort(function(a,b){ return a.order - b.order; }).forEach(function(sec){
+      var item = document.createElement('div');
+      item.className = 'section-item';
+      item.innerHTML =
+        '<div class="head"><div class="t">' + escapeHtml(sec.icon || '✨') + ' ' + escapeHtml(sec.title_en) + '</div>' +
+        '<label class="toggle"><input type="checkbox" ' + (sec.enabled ? 'checked' : '') + '><span class="track"></span><span class="thumb"></span></label></div>' +
+        '<div class="row" style="margin-top:10px;"><button class="btn btn-ghost btn-sm" data-act="edit">Edit</button><button class="btn btn-danger btn-sm" data-act="delete">Delete</button></div>';
+      item.querySelector('input[type=checkbox]').addEventListener('change', function(ev){
+        api('/api/admin/sections/' + sec.id, { method:'PUT', body:{ enabled: ev.target.checked } })
+          .then(function(res){ sec.enabled = res.section.enabled; toast(sec.enabled ? 'Section enabled' : 'Section disabled'); })
+          .catch(function(){ toast('Could not update section', 'err'); ev.target.checked = !ev.target.checked; });
+      });
+      item.querySelector('[data-act="edit"]').addEventListener('click', function(){ openSectionModal(sec); });
+      item.querySelector('[data-act="delete"]').addEventListener('click', function(){
+        confirmDialog('This will remove the "' + escapeHtml(sec.title_en) + '" section.').then(function(ok){
+          if(!ok) return;
+          api('/api/admin/sections/' + sec.id, { method:'DELETE' }).then(function(){
+            state.sections = state.sections.filter(function(s){ return s.id !== sec.id; });
+            renderSections();
+            toast('Section deleted');
+          }).catch(function(){ toast('Could not delete section', 'err'); });
+        });
+      });
+      list.appendChild(item);
+    });
+  }
+  function openSectionModal(sec){
+    var isNew = !sec;
+    sec = sec || { title_en:'', title_ar:'', description_en:'', description_ar:'', icon:'✨' };
+    var backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    backdrop.innerHTML =
+      '<div class="modal" style="max-width:440px;">' +
+      '<h3>' + (isNew ? 'Add section' : 'Edit section') + '</h3>' +
+      '<label class="first">Icon (emoji)</label><input type="text" id="sm-icon" maxlength="4" value="' + escapeAttr(sec.icon || '✨') + '" />' +
+      '<label>Title (English)</label><input type="text" id="sm-title-en" value="' + escapeAttr(sec.title_en) + '" />' +
+      '<label>Title (Arabic)</label><input type="text" id="sm-title-ar" dir="rtl" value="' + escapeAttr(sec.title_ar) + '" />' +
+      '<label>Description (English)</label><textarea id="sm-desc-en" rows="3">' + escapeHtml(sec.description_en || '') + '</textarea>' +
+      '<label>Description (Arabic)</label><textarea id="sm-desc-ar" dir="rtl" rows="3">' + escapeHtml(sec.description_ar || '') + '</textarea>' +
+      '<div class="row end"><button class="btn btn-ghost" id="sm-cancel">Cancel</button><button class="btn btn-primary" id="sm-save">' + (isNew ? 'Add Section' : 'Save Changes') + '</button></div>' +
+      '</div>';
+    document.body.appendChild(backdrop);
+    backdrop.querySelector('#sm-cancel').onclick = function(){ backdrop.remove(); };
+    backdrop.querySelector('#sm-save').onclick = function(){
+      var body = {
+        icon: backdrop.querySelector('#sm-icon').value,
+        title_en: backdrop.querySelector('#sm-title-en').value,
+        title_ar: backdrop.querySelector('#sm-title-ar').value,
+        description_en: backdrop.querySelector('#sm-desc-en').value,
+        description_ar: backdrop.querySelector('#sm-desc-ar').value
+      };
+      if(!body.title_en.trim()){ toast('Title (English) is required', 'err'); return; }
+      var req = isNew ? api('/api/admin/sections', { method:'POST', body: body }) : api('/api/admin/sections/' + sec.id, { method:'PUT', body: body });
+      req.then(function(res){
+        var saved = res.section;
+        if(isNew) state.sections.push(saved);
+        else Object.assign(sec, saved);
+        renderSections();
+        backdrop.remove();
+        toast(isNew ? 'Section added' : 'Section updated');
+      }).catch(function(){ toast('Could not save section', 'err'); });
+    };
+  }
+  document.getElementById('add-section-btn').addEventListener('click', function(){ openSectionModal(null); });
+
+  /* ---------------- media ---------------- */
+  document.getElementById('media-file').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){ document.getElementById('media-preview').src = reader.result; };
+    reader.readAsDataURL(file);
+  });
+  document.getElementById('media-upload-btn').addEventListener('click', function(){
+    var file = document.getElementById('media-file').files[0];
+    if(!file){ toast('Choose an image first', 'err'); return; }
+    if(file.size > 5*1024*1024){ toast('Image must be under 5MB', 'err'); return; }
+    var reader = new FileReader();
+    reader.onload = function(){
+      api('/api/admin/upload', { method:'POST', body:{ dataUrl: reader.result, target:'profileImage' } })
+        .then(function(res){
+          state.profile.profileImage = res.url;
+          toast('Photo updated');
+        }).catch(function(){ toast('Upload failed — use PNG, JPEG or WebP under 5MB', 'err'); });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  /* ---------------- appearance ---------------- */
+  function fillAppearanceForm(){
+    document.getElementById('a-theme').value = state.settings.theme || 'dark';
+    document.getElementById('a-buttonStyle').value = state.settings.buttonStyle || 'glass';
+    document.getElementById('a-accent').value = state.settings.accent || '#1CE1C0';
+    document.getElementById('a-accent2').value = state.settings.accent2 || '#588AFF';
+  }
+  document.getElementById('appearance-save').addEventListener('click', function(){
+    var body = {
+      theme: document.getElementById('a-theme').value,
+      buttonStyle: document.getElementById('a-buttonStyle').value,
+      accent: document.getElementById('a-accent').value,
+      accent2: document.getElementById('a-accent2').value
+    };
+    api('/api/admin/settings', { method:'PUT', body: body }).then(function(res){
+      state.settings = res.settings;
+      toast('Appearance saved');
+    }).catch(function(){ toast('Could not save appearance', 'err'); });
+  });
+
+  /* ---------------- account ---------------- */
+  document.getElementById('pw-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var body = { currentPassword: document.getElementById('pw-current').value, newPassword: document.getElementById('pw-new').value };
+    api('/api/admin/change-password', { method:'POST', body: body }).then(function(){
+      toast('Password changed — please sign in again');
+      setTimeout(function(){ window.location.href = '/admin/login'; }, 1200);
+    }).catch(function(e2){
+      toast(e2.message === 'WRONG_CURRENT_PASSWORD' ? 'Current password is incorrect' : 'Could not change password', 'err');
+    });
+  });
+
+  /* ---------------- helpers ---------------- */
+  function escapeHtml(s){ return String(s || '').replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  load();
+})();
+</script>
+</body>
+</html>
